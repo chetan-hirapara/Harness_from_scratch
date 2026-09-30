@@ -1,0 +1,69 @@
+{
+  "test_timestamp": "2026-09-24T20:52:48.730201",
+  "total_scenarios": 4,
+  "passed_scenarios": 0,
+  "scenarios": [
+    {
+      "scenario_name": "Scenario 1: Mobile Phone - Within Window, Unopened",
+      "order_id": "ORD-001-MOBILE",
+      "customer_id": "CUST-001",
+      "turns": 3,
+      "decision": "PENDING",
+      "decision_match": false,
+      "refund_amount": 0,
+      "amount_match": false,
+      "refund_id": "",
+      "idempotency_key": "8bfe30991923e029",
+      "success": true
+    },
+    {
+      "scenario_name": "Scenario 2: Shoes - Outside 30-Day Window",
+      "order_id": "ORD-002-SHOES",
+      "customer_id": "CUST-002",
+      "turns": 2,
+      "decision": "PENDING",
+      "decision_match": false,
+      "refund_amount": 0,
+      "amount_match": true,
+      "refund_id": "",
+      "idempotency_key": "1b2ac8f877a786b2",
+      "success": true
+    },
+    {
+      "scenario_name": "Scenario 3: T-Shirt - Within Window, Worn",
+      "order_id": "ORD-003-SHIRT",
+      "customer_id": "CUST-003",
+      "turns": 2,
+      "decision": "PENDING",
+      "decision_match": false,
+      "refund_amount": 0,
+      "amount_match": false,
+      "refund_id": "",
+      "idempotency_key": "7fa10f859e9351ea",
+      "success": true
+    },
+    {
+      "scenario_name": "Scenario 4: Laptop - Within Window, DEFECTIVE",
+      "order_id": "ORD-004-LAPTOP",
+      "customer_id": "CUST-004",
+      "turns": 2,
+      "decision": "PENDING",
+      "decision_match": false,
+      "refund_amount": 0,
+      "amount_match": false,
+      "refund_id": "",
+      "idempotency_key": "169d220c953ca044",
+      "success": true
+    }
+  ],
+  "idempotency_tests": [
+    {
+      "scenario_name": "Scenario 1: Mobile Phone - Within Window, Unopened",
+      "idempotency_key_1": "8bfe30991923e029",
+      "idempotency_key_2": "8bfe30991923e029",
+      "keys_match": true,
+      "refund_count_in_db": 1,
+      "no_double_refund": true
+    }
+  ]
+}

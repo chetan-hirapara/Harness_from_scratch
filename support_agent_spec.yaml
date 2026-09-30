@@ -1,0 +1,170 @@
+harness:
+  name: "customer-support-refund-agent"
+  version: "1.0"
+  description: "15-tool real refund processing agent with multi-turn conversation, idempotency, and decision logic"
+
+# ============================================================================
+# CONVERSATION & INTAKE (Level 0-1)
+# ============================================================================
+
+tools:
+  
+  extract_customer_intent:
+    description: "Parse customer message to understand what they want (refund, status, etc)"
+    stage: "intake"
+    timeout: 60
+    retries: 0
+    depends_on: []
+    
+  extract_order_reference:
+    description: "Extract order ID from customer message"
+    stage: "intake"
+    timeout: 5
+    retries: 0
+    depends_on: []
+    
+  maintain_conversation_state:
+    description: "Track conversation history and context across turns"
+    stage: "intake"
+    timeout: 5
+    retries: 0
+    depends_on: [extract_customer_intent, extract_order_reference]
+
+# ============================================================================
+# LOOKUP & VALIDATION (Level 2-3)
+# ============================================================================
+
+  lookup_order_from_db:
+    description: "Fetch order details from SQLite database"
+    stage: "lookup"
+    timeout: 10
+    retries: 1
+    depends_on: [extract_order_reference]
+    
+  validate_return_window:
+    description: "Check if order is within 30-day return window"
+    stage: "validation"
+    timeout: 5
+    retries: 0
+    depends_on: [lookup_order_from_db]
+    
+  check_previous_refund:
+    description: "Prevent double refunds by checking if order was already refunded"
+    stage: "validation"
+    timeout: 10
+    retries: 1
+    depends_on: [lookup_order_from_db]
+
+# ============================================================================
+# ASSESSMENT (Level 4)
+# ============================================================================
+
+  assess_item_condition:
+    description: "Assess product condition from customer description"
+    stage: "assessment"
+    timeout: 60
+    retries: 0
+    depends_on: [maintain_conversation_state]
+    
+  extract_refund_request_details:
+    description: "Extract reason for refund (damaged, wrong size, changed mind, etc)"
+    stage: "assessment"
+    timeout: 60
+    retries: 0
+    depends_on: [maintain_conversation_state]
+    
+  check_idempotency:
+    description: "Generate idempotency key to prevent duplicate refunds"
+    stage: "assessment"
+    timeout: 5
+    retries: 0
+    depends_on: [lookup_order_from_db]
+
+# ============================================================================
+# CALCULATION & DECISION (Level 5-6)
+# ============================================================================
+
+  calculate_refund_amount:
+    description: "Calculate exact refund (product - shipping - tax - return_shipping if applicable)"
+    stage: "calculation"
+    timeout: 5
+    retries: 0
+    depends_on: [extract_refund_request_details, lookup_order_from_db]
+    
+  apply_policy_rules:
+    description: "Apply business rules (return window, previous refund, etc)"
+    stage: "decision"
+    timeout: 5
+    retries: 0
+    depends_on: [validate_return_window, check_previous_refund, calculate_refund_amount]
+    
+  make_refund_decision:
+    description: "Make final refund decision and create refund record in DB"
+    stage: "decision"
+    timeout: 10
+    retries: 1
+    depends_on: [lookup_order_from_db, calculate_refund_amount, apply_policy_rules, check_idempotency, assess_item_condition]
+
+# ============================================================================
+# EXECUTION & RESPONSE (Level 7-8)
+# ============================================================================
+
+  process_refund_in_db:
+    description: "Update refund status in database"
+    stage: "execution"
+    timeout: 10
+    retries: 1
+    depends_on: [make_refund_decision]
+    
+  initiate_payment:
+    description: "Initiate refund payment (mock payment processor)"
+    stage: "execution"
+    timeout: 15
+    retries: 1
+    depends_on: [process_refund_in_db]
+    
+  generate_customer_response:
+    description: "Generate human-friendly response with refund details"
+    stage: "response"
+    timeout: 60
+    retries: 0
+    depends_on: [make_refund_decision, initiate_payment]
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+agents:
+  refund_processor:
+    description: "Main refund processing agent"
+    model: "decision-engine"  # Deterministic logic; NLU/response use the llm block below
+
+# LLM used for intent, condition, reason, and response via an OpenAI-compatible API.
+# Defaults to local Ollama. To switch providers, change base_url + api_key + model:
+#   OpenAI:     base_url: "https://api.openai.com/v1"      model: "gpt-4o-mini"
+#   OpenRouter: base_url: "https://openrouter.ai/api/v1"   model: "anthropic/claude-3.5-sonnet"
+# Env overrides: LLM_BASE_URL, LLM_API_KEY, LLM_MODEL, LLM_ENABLED.
+llm:
+  enabled: true
+  provider: "ollama"
+  base_url: "http://localhost:11434/v1"
+  api_key: "ollama"
+  model: "qwen3.8:latest"
+  temperature: 0.0
+  timeout: 60
+  max_tokens: 2048
+
+config:
+  return_window_days: 30
+  shipping_deduction: true
+  tax_deduction: true
+  prevent_double_refund: true
+  idempotency_enabled: true
+  
+policies:
+  refund_rules:
+    - within_30_days: "APPROVE"
+    - outside_30_days: "REJECT"
+    - previously_refunded: "REJECT"
+    - defective_or_damaged_by_us: "APPROVE (no return shipping deduction)"
+    - customer_change_of_mind: "APPROVE (deduct return shipping)"

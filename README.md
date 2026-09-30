@@ -69,19 +69,43 @@ On macOS/Linux:
 source .venv/bin/activate
 ```
 
-3. Install dependencies:
+3. Copy the example environment file and review the values:
+
+```bash
+copy .env.example .env
+```
+
+Or on macOS/Linux:
+
+```bash
+cp .env.example .env
+```
+
+The project includes the following environment variables:
+
+```env
+LLM_ENABLED=true
+LLM_BASE_URL=http://localhost:11434/v1
+LLM_API_KEY=ollama
+LLM_MODEL=qwen3.8:latest
+LLM_TEMPERATURE=0.0
+LLM_TIMEOUT=60.0
+LLM_MAX_TOKENS=2048
+```
+
+4. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Initialize the database:
+5. Initialize the database:
 
 ```bash
 python setup_db.py
 ```
 
-5. Run the demo agent scenarios:
+6. Run the demo agent scenarios:
 
 ```bash
 python support_agent_main.py
@@ -89,7 +113,9 @@ python support_agent_main.py
 
 ## Optional LLM configuration
 
-The project supports environment overrides for the LLM client. For example:
+The project supports environment overrides for the LLM client. You can either edit `.env` or set them directly in your shell before running the app.
+
+Example PowerShell environment variables:
 
 ```powershell
 $env:LLM_ENABLED = "true"

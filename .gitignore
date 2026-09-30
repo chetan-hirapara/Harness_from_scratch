@@ -33,7 +33,7 @@ Thumbs.db
 
 # Local environment/config
 .env
-.env.*
+
 
 # Project-specific generated files
 *.log
